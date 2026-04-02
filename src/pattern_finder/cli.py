@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 
-from .generator import ANOMALY_TYPES, SyntheticGenerator
+from .generator import ANOMALY_TYPES, BACKGROUND_NOISE_LEVELS, SyntheticGenerator
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -13,6 +13,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--num-samples", type=int, default=1)
     parser.add_argument("--series-length", type=int, default=128)
     parser.add_argument("--seed", type=int, default=None)
+    parser.add_argument("--max-number-of-intervals", type=int, default=8)
+    parser.add_argument(
+        "--background-noise",
+        type=str,
+        default=None,
+        choices=tuple(BACKGROUND_NOISE_LEVELS),
+    )
     parser.add_argument(
         "--anomaly-type",
         type=str,
@@ -34,6 +41,8 @@ def main() -> None:
         output_path=args.output,
         anomaly_type=args.anomaly_type,
         series_length=args.series_length,
+        max_number_of_intervals=args.max_number_of_intervals,
+        background_noise=args.background_noise,
         variant=args.variant,
     )
     if args.output is None:

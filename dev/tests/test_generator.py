@@ -59,6 +59,30 @@ class GeneratorTests(unittest.TestCase):
             (4.5, 6.0),
         )
 
+    def test_generate_dataset_accepts_background_noise(self) -> None:
+        generator = SyntheticGenerator(seed=11)
+        samples = generator.generate_dataset(
+            num_samples=2,
+            anomaly_type="range",
+            series_length=128,
+            background_noise="heavy",
+        )
+        self.assertEqual(len(samples), 2)
+        self.assertTrue(
+            all(sample["context"]["background_noise"] == "heavy" for sample in samples)
+        )
+
+    def test_generate_sample_respects_max_number_of_intervals(self) -> None:
+        sample = generate_sample(
+            sample_id="sample_000006",
+            anomaly_type="point",
+            series_length=256,
+            max_number_of_intervals=1,
+            seed=5,
+        )
+        self.assertEqual(sample["parameters"]["max_number_of_intervals"], 1)
+        self.assertEqual(len(sample["events"]), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

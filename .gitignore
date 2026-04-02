@@ -7,6 +7,8 @@ __pycache__/
 venv/
 dist/
 build/
+models/
+datasets/
 *.pkl
 *.npy
 *.npz

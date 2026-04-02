@@ -7,7 +7,10 @@ name = "patternfinder"
 version = "0.1.0"
 description = "Synthetic time-series anomaly generator with parameter-linked descriptions."
 requires-python = ">=3.10"
-dependencies = []
+dependencies = [
+    "matplotlib>=3.10,<3.11",
+    "Pillow>=12.1,<13",
+]
 
 [tool.setuptools]
 package-dir = {"" = "src"}

@@ -81,6 +81,7 @@ class SyntheticGenerator:
         sample_id: str,
         anomaly_type: str | None = None,
         series_length: int = 1000,
+        max_number_of_intervals: int = 8,
         background_noise: str | None = None,
         variant: str | None = None,
     ) -> dict[str, Any]:
@@ -90,6 +91,8 @@ class SyntheticGenerator:
             raise ValueError(f"Unsupported anomaly_type: {anomaly_type}")
         if series_length < 32:
             raise ValueError("series_length must be at least 32")
+        if max_number_of_intervals < 1:
+            raise ValueError("max_number_of_intervals must be at least 1")
 
         sample_params = self._sample_raw_params(anomaly_type)
         variant = self._normalize_variant(anomaly_type, variant, sample_params)
@@ -103,6 +106,7 @@ class SyntheticGenerator:
             anomaly_type=anomaly_type,
             generator_model=generator_model,
             series_length=series_length,
+            max_number_of_intervals=max_number_of_intervals,
         )
 
         noise_label = background_noise or self.rng.choice(
@@ -152,6 +156,7 @@ class SyntheticGenerator:
             parameters={
                 "anomaly_type": anomaly_type,
                 "variant": variant,
+                "max_number_of_intervals": max_number_of_intervals,
                 "generator_model": generator_model,
             },
             events=events,
@@ -170,6 +175,8 @@ class SyntheticGenerator:
         output_path: str | Path | None = None,
         anomaly_type: str | None = None,
         series_length: int = 1000,
+        max_number_of_intervals: int = 8,
+        background_noise: str | None = None,
         variant: str | None = None,
     ) -> list[dict[str, Any]]:
         samples = [
@@ -177,6 +184,8 @@ class SyntheticGenerator:
                 sample_id=f"sample_{index + 1:06d}",
                 anomaly_type=anomaly_type,
                 series_length=series_length,
+                max_number_of_intervals=max_number_of_intervals,
+                background_noise=background_noise,
                 variant=variant,
             )
             for index in range(num_samples)
@@ -293,21 +302,31 @@ class SyntheticGenerator:
         anomaly_type: str,
         generator_model: dict[str, Any],
         series_length: int,
+        max_number_of_intervals: int,
     ) -> tuple[list[float], list[dict[str, Any]]]:
         if anomaly_type == "point":
-            return self._generate_point_series(generator_model, series_length)
+            return self._generate_point_series(
+                generator_model, series_length, max_number_of_intervals
+            )
         if anomaly_type == "freq":
-            return self._generate_freq_series(generator_model, series_length)
+            return self._generate_freq_series(
+                generator_model, series_length, max_number_of_intervals
+            )
         if anomaly_type == "trend":
-            return self._generate_trend_series(generator_model, series_length)
+            return self._generate_trend_series(
+                generator_model, series_length, max_number_of_intervals
+            )
         if anomaly_type == "range":
-            return self._generate_range_series(generator_model, series_length)
+            return self._generate_range_series(
+                generator_model, series_length, max_number_of_intervals
+            )
         raise ValueError(f"Unsupported anomaly_type: {anomaly_type}")
 
     def _generate_point_series(
         self,
         config: dict[str, Any],
         series_length: int,
+        max_number_of_intervals: int,
     ) -> tuple[list[float], list[dict[str, Any]]]:
         series = [
             math.sin(2 * math.pi * config["base_frequency"] * t)
@@ -319,6 +338,7 @@ class SyntheticGenerator:
             anomaly_duration_rate=config["anomaly_duration_rate"],
             minimum_anomaly_duration=config["minimum_anomaly_duration"],
             minimum_normal_duration=config["minimum_normal_duration"],
+            max_number_of_intervals=max_number_of_intervals,
         )
         event_params = []
         for start, end in intervals:
@@ -337,6 +357,7 @@ class SyntheticGenerator:
         self,
         config: dict[str, Any],
         series_length: int,
+        max_number_of_intervals: int,
     ) -> tuple[list[float], list[dict[str, Any]]]:
         freq_function = [config["base_frequency"]] * series_length
         intervals = self._sample_intervals(
@@ -345,6 +366,7 @@ class SyntheticGenerator:
             anomaly_duration_rate=config["anomaly_duration_rate"],
             minimum_anomaly_duration=config["minimum_anomaly_duration"],
             minimum_normal_duration=config["minimum_normal_duration"],
+            max_number_of_intervals=max_number_of_intervals,
         )
         event_params = []
         for start, end in intervals:
@@ -373,6 +395,7 @@ class SyntheticGenerator:
         self,
         config: dict[str, Any],
         series_length: int,
+        max_number_of_intervals: int,
     ) -> tuple[list[float], list[dict[str, Any]]]:
         t = list(range(series_length))
         intervals = self._sample_intervals(
@@ -381,6 +404,7 @@ class SyntheticGenerator:
             anomaly_duration_rate=config["anomaly_duration_rate"],
             minimum_anomaly_duration=config["minimum_anomaly_duration"],
             minimum_normal_duration=config["minimum_normal_duration"],
+            max_number_of_intervals=max_number_of_intervals,
         )
         trend = [0.0] * series_length
         current_value = 0.0
@@ -431,6 +455,7 @@ class SyntheticGenerator:
         self,
         config: dict[str, Any],
         series_length: int,
+        max_number_of_intervals: int,
     ) -> tuple[list[float], list[dict[str, Any]]]:
         series = [
             self.rng.gauss(config["nominal_data_mean"], config["nominal_data_std"])
@@ -442,6 +467,7 @@ class SyntheticGenerator:
             anomaly_duration_rate=config["anomaly_duration_rate"],
             minimum_anomaly_duration=config["minimum_anomaly_duration"],
             minimum_normal_duration=config["minimum_normal_duration"],
+            max_number_of_intervals=max_number_of_intervals,
         )
         direction_sign = 1.0 if config["direction"] == "up" else -1.0
         low, high = config["anomaly_size_range"]
@@ -609,6 +635,7 @@ def generate_sample(
     sample_id: str = "sample_000001",
     anomaly_type: str | None = None,
     series_length: int = 1000,
+    max_number_of_intervals: int = 8,
     seed: int | None = None,
     variant: str | None = None,
 ) -> dict[str, Any]:
@@ -617,5 +644,6 @@ def generate_sample(
         sample_id=sample_id,
         anomaly_type=anomaly_type,
         series_length=series_length,
+        max_number_of_intervals=max_number_of_intervals,
         variant=variant,
     )
