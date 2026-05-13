@@ -2,6 +2,14 @@
 
 PatternFinder generates a synthetic time-series anomaly dataset with point labels, event descriptions, and plain PNG renders for vision-style inputs.
 
+## TS Grounder SFT + RL Framework
+
+The latest downstream training framework for `Thesis/Training-model-yilong` is documented here:
+
+- [TS Grounder SFT + RL Framework](docs/ts_grounder_sft_rl_framework.md)
+
+It covers the full input-data format, VLM SFT JSONL construction, token-level SFT loss masking, optional auxiliary losses, RL reward design, GRPO-style policy update, Slurm workflow, and figure text for the system diagram.
+
 ## Default Dataset
 
 - Balanced anomaly types: `point`, `freq`, `trend`, `range`
